@@ -71,6 +71,9 @@ class DisplayMarkers(Node) :
             Quaternion = x + y + z + w 
                        = cos(theta) + sin(theta)(c1 *i + c2 *j + c3 *k) 
             (where ratation asix is determined by coeficiens of i,j,k)
+
+            Useful mannual about Quaternion:
+            https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Quaternion-Fundamentals.html
             https://eater.net/quaternions/video/intro
              '''
 
