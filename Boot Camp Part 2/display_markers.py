@@ -61,10 +61,18 @@ class DisplayMarkers(Node) :
             tmsg.transform.translation.y = -marker.pose.pose.position.x + 0.0175
             tmsg.transform.translation.z = -marker.pose.pose.position.y + 0.10456
 
-            tmsg.transform.rotation.x = marker.pose.pose.orientation.x
-            tmsg.transform.rotation.y = marker.pose.pose.orientation.y
-            tmsg.transform.rotation.z = marker.pose.pose.orientation.z
-            tmsg.transform.rotation.w = marker.pose.pose.orientation.w
+            tmsg.transform.rotation.x = 0 *marker.pose.pose.orientation.x
+            tmsg.transform.rotation.y = 0 *marker.pose.pose.orientation.y
+            tmsg.transform.rotation.z = 0 *marker.pose.pose.orientation.z + 1
+            tmsg.transform.rotation.w = 0 *marker.pose.pose.orientation.w
+
+            '''   
+            Quaternion rotate by theta degree around certain asix:
+            Quaternion = x + y + z + w 
+                       = cos(theta) + sin(theta)(c1 *i + c2 *j + c3 *k) 
+            (where ratation asix is determined by coeficiens of i,j,k)
+            https://eater.net/quaternions/video/intro
+             '''
 
 
             self.tf_broadcaster.sendTransform(tmsg)
