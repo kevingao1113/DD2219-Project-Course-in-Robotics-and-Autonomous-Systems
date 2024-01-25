@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 
 import math
 
@@ -26,7 +27,7 @@ class Detection(Node):
         # Subscribe to point cloud topic and call callback function on each recieved message
         self.create_subscription(
             PointCloud2, '/camera/depth/color/points', self.cloud_callback, 10)
-
+        
     def cloud_callback(self, msg: PointCloud2):
         """Takes point cloud readings to detect objects.
 
@@ -69,27 +70,35 @@ class Detection(Node):
         points = np.asarray(ds_o3d_point_cloud.points)
         colors = np.asarray(ds_o3d_point_cloud.colors)
         colors = (colors * 255).astype(np.uint8)
+        num_rows = points.shape[0]
+        mark = np.empty((num_rows,2))
 
-
+        # log for detectating objects
         red_object_color = (252, 102, 100)
-        green_object_color = (0, 112, 102)
-        tolerance = 50
-
+        green_object_color = (0, 120, 110)
+        dist_threshold = 1.0  # 0.9 meters
+        red_tolerance = 50
+        green_tolerance = 65
 
         red_color_differences =np.abs( np.linalg.norm(colors - red_object_color, axis=1))
         green_color_differences =np.abs( np.linalg.norm(colors - green_object_color, axis=1))
-
-        if ((red_color_differences < tolerance).any()):
-            self.get_logger().info("Red Object detected!")
-
-        if ((green_color_differences < tolerance).any()):
-            self.get_logger().info("Green Object detected!")
-
         
+        GREEN = '\033[92m'
+        RED = '\033[91m'
+        RESET = '\033[0m'
 
+        for i in range(len(colors)):
+            dist = np.sqrt(points[i][0]**2 + points[i][1]**2 + points[i][2]**2)
 
-
-
+            if red_color_differences[i] < red_tolerance and dist < dist_threshold:
+                self.get_logger().info(RED +f"Red Object detected! at ({points[i][0]}, {points[i][1]}, {points[i][2]})"+ RESET)
+        
+        
+        for i in range(len(colors)):
+            dist = np.sqrt(points[i][0]**2 + points[i][1]**2 + points[i][2]**2)
+            
+            if green_color_differences[i] < green_tolerance and dist < dist_threshold+0.1:
+                self.get_logger().info(GREEN+f"Green Object detected! at ({points[i][0]}, {points[i][1]}, {points[i][2]})"+ RESET)
 
 
 
