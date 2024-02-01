@@ -44,10 +44,10 @@ class Detection(Node):
 
         Keyword arguments:
         msg -- A point cloud ROS message. To see more information about it 
-        run 'ros2 interface show sensor_msgs/msg/PointCloud2' in a terminal.
+        run 'ros2 interface show sensor_msgs/msg/PointCloud2' in  a terminal.
         """
 
-        # Convert ROS -> NumPy
+        # Convert ROS ->  NumPy
         gen = pc2.read_points_numpy(msg, skip_nans=True)
         xyz = gen[:,:3]
         rgb = np.empty(xyz.shape, dtype=np.uint32)
