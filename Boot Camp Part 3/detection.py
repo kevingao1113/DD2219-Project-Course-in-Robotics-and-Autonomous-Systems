@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import sys
 
 import math
 
@@ -15,6 +14,11 @@ from open3d import open3d as o3d
 import ctypes
 import struct
 
+import sys
+from sensor_msgs.msg import PointField  
+
+
+
 class Detection(Node):
 
     def __init__(self):
@@ -28,6 +32,7 @@ class Detection(Node):
         self.create_subscription(
             PointCloud2, '/camera/depth/color/points', self.cloud_callback, 10)
         
+
     def cloud_callback(self, msg: PointCloud2):
         """Takes point cloud readings to detect objects.
 
@@ -68,15 +73,13 @@ class Detection(Node):
 
         # Convert Open3D -> NumPy
         points = np.asarray(ds_o3d_point_cloud.points)
-        colors = np.asarray(ds_o3d_point_cloud.colors)
-        colors = (colors * 255).astype(np.uint8)
-        num_rows = points.shape[0]
-        mark = np.empty((num_rows,2))
+        raw_colors = np.asarray(ds_o3d_point_cloud.colors)
+        colors = (raw_colors * 255).astype(np.uint8)
 
-        # log for detectating objects
+        # output log anout object detection
         red_object_color = (252, 102, 100)
         green_object_color = (0, 120, 110)
-        dist_threshold = 1.0  # 0.9 meters
+        dist_threshold = 1.0  
         red_tolerance = 50
         green_tolerance = 65
 
@@ -86,19 +89,50 @@ class Detection(Node):
         GREEN = '\033[92m'
         RED = '\033[91m'
         RESET = '\033[0m'
+        filtered_points = []
 
         for i in range(len(colors)):
             dist = np.sqrt(points[i][0]**2 + points[i][1]**2 + points[i][2]**2)
 
             if red_color_differences[i] < red_tolerance and dist < dist_threshold:
-                self.get_logger().info(RED +f"Red Object detected! at ({points[i][0]}, {points[i][1]}, {points[i][2]})"+ RESET)
-        
-        
-        for i in range(len(colors)):
-            dist = np.sqrt(points[i][0]**2 + points[i][1]**2 + points[i][2]**2)
-            
+                self.get_logger().info(RED +f"Red Object detected! "+ RESET)
+                filtered_points.append([points[i][0], points[i][1], points[i][2], colors[i][0], colors[i][1], colors[i][2]])
+
             if green_color_differences[i] < green_tolerance and dist < dist_threshold+0.1:
-                self.get_logger().info(GREEN+f"Green Object detected! at ({points[i][0]}, {points[i][1]}, {points[i][2]})"+ RESET)
+                self.get_logger().info(GREEN+f"Green Object detected! "+ RESET)
+                filtered_points.append([points[i][0], points[i][1], points[i][2], colors[i][0], colors[i][1], colors[i][2]])
+        
+        
+        if filtered_points:
+            # Create a new PointCloud2 message with filtered data
+            filtered_pc2_msg = PointCloud2()
+            filtered_pc2_msg.header = msg.header
+            filtered_pc2_msg.height = msg.height
+            filtered_pc2_msg.width = len(filtered_points)
+            filtered_pc2_msg.fields = msg.fields
+
+            filtered_pc2_msg.is_bigendian = False
+            filtered_pc2_msg.point_step = msg.point_step  # Length of a point in bytes (4 floats)
+            filtered_pc2_msg.row_step = filtered_pc2_msg.point_step * filtered_pc2_msg.width
+            filtered_pc2_msg.data = bytes()  # Initialize the data as empty
+            filtered_pc2_msg.is_dense = True  # Set to True if there are no invalid points
+
+            # Create an array to hold the binary data for all points
+            filtered_data = bytearray()
+
+            for point in filtered_points:
+                x, y, z, r, g, b = point
+
+                # Convert x, y, z, and rgb values to bytes and append them to filtered_data
+                point_data = bytearray(struct.pack('<ffffI', x, y, z, 0.0, 0))  # Insert four zeros at offset 12
+                rgb_value = ((int(r) << 16) | (int(g) << 8) | int(b))
+                struct.pack_into('<I', point_data, 16, rgb_value)  # Update the rgb value at offset 16
+                filtered_data.extend(point_data)
+            
+            filtered_pc2_msg.data = bytes(filtered_data)
+
+            # Publish the filtered PointCloud2 message
+            self._pub.publish(filtered_pc2_msg)
 
 
 
