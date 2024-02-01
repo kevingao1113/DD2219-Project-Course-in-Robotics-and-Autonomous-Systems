@@ -1,4 +1,4 @@
-# DD2219-Project-Course-in-Robotics-and-Autonomous-Systems
+# DD2419-Project-Course-in-Robotics-and-Autonomous-Systems
 
 DD2419 VT24 Project Course in Robotics and Autonomous Systems (ROBPVT24)
 
